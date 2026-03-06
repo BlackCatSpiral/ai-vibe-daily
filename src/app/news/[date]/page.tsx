@@ -19,7 +19,7 @@ async function getNewsByDate(date: string) {
     .single()
 
   if (!data) return null
-
+  
   const newsData = data as any
 
   const { data: likesCount } = await supabase
@@ -38,20 +38,7 @@ export default async function NewsPage({ params }: Props) {
     notFound()
   }
 
-  // 安全解析 content
-  let content: any[] = []
-  if (news.content) {
-    if (Array.isArray(news.content)) {
-      content = news.content
-    } else if (typeof news.content === 'string') {
-      try {
-        const parsed = JSON.parse(news.content)
-        content = Array.isArray(parsed) ? parsed : []
-      } catch {
-        content = []
-      }
-    }
-  }
+  const content = (news.content as any[]) || []
 
   return (
     <main className="min-h-screen pb-20">
