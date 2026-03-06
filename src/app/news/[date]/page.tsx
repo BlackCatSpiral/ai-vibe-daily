@@ -1,4 +1,7 @@
-import { notFound } from 'next/navigation'
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useParams } from 'next/navigation'
 import { formatDate } from '@/utils'
 import { NewsCard } from '@/components/NewsCard'
 import { LikeButton } from '@/components/LikeButton'
@@ -7,35 +10,43 @@ import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 
-interface Props {
-  params: { date: string }
-}
-
-async function getNewsByDate(date: string) {
-  const { data } = await supabase
-    .from('daily_news')
-    .select('*')
-    .eq('date', date)
-    .single()
-
-  if (!data) return null
+export default function NewsPage() {
+  const params = useParams()
+  const date = params.date as string
   
-  const newsData = data as any
+  const [news, setNews] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
-  const { data: likesCount } = await supabase
-    .rpc('get_daily_news_likes', { news_id: newsData.id } as any)
+  useEffect(() => {
+    async function fetchNews() {
+      const { data } = await supabase
+        .from('daily_news')
+        .select('*')
+        .eq('date', date)
+        .single()
 
-  return {
-    ...newsData,
-    likes_count: likesCount || 0
+      if (data) {
+        const newsData = data as any
+        const { data: likesCount } = await supabase
+          .rpc('get_daily_news_likes', { news_id: newsData.id } as any)
+        
+        setNews({
+          ...newsData,
+          likes_count: likesCount || 0
+        })
+      }
+      setLoading(false)
+    }
+
+    fetchNews()
+  }, [date])
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center text-gray-400">加载中...</div>
   }
-}
-
-export default async function NewsPage({ params }: Props) {
-  const news = await getNewsByDate(params.date)
 
   if (!news) {
-    notFound()
+    return <div className="min-h-screen flex items-center justify-center text-gray-400">未找到该日期的新闻</div>
   }
 
   const content = (news.content as any[]) || []
