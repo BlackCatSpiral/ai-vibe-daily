@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { formatDate } from '@/utils'
 import { NewsCard } from '@/components/NewsCard'
 import { CommentsSection } from '@/components/CommentsSection'
