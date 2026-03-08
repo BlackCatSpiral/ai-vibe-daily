@@ -16,6 +16,7 @@ export interface NewsItem {
   tag: string
   tag_class: string
   image_url?: string
+  image?: string
 }
 
 export interface DailyNews {

@@ -38,9 +38,10 @@ export function NewsCard({ item, index }: NewsCardProps) {
       <div className="absolute inset-0 bg-gradient-to-br from-neon-blue/10 via-transparent to-neon-pink/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
       
       <img
-        src={item.image_url || `https://images.unsplash.com/photo-${imgId}?w=800&h=400&fit=crop`}
+        src={item.image || item.image_url || `https://images.unsplash.com/photo-${imgId}?w=800&h=400&fit=crop`}
         alt={item.title}
         className="w-full h-52 object-cover border-b border-neon-blue/10"
+        suppressHydrationWarning
       />
       
       <div className="p-6">

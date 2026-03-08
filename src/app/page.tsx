@@ -1,10 +1,21 @@
-export const dynamic = 'force-dynamic'
-
 import { formatDate } from '@/utils'
-import { NewsCard } from '@/components/NewsCard'
 import { CommentsSection } from '@/components/CommentsSection'
 import { LikeButton } from '@/components/LikeButton'
+import { SafeImage } from '@/components/SafeImage'
 import { supabase } from '@/lib/supabase'
+import Link from 'next/link'
+
+const tagStyles: Record<string, string> = {
+  crisis: 'bg-red-500/10 text-red-400 border-red-500/30',
+  security: 'bg-red-500/10 text-red-400 border-red-500/30',
+  update: 'bg-neon-blue/10 text-neon-blue border-neon-blue/30',
+  trend: 'bg-green-500/10 text-green-400 border-green-500/30',
+  strategy: 'bg-neon-pink/10 text-neon-pink border-neon-pink/30',
+  default: 'bg-gray-500/10 text-gray-400 border-gray-500/30',
+}
+
+// ISR: 每小时重新生成一次
+export const revalidate = 3600
 
 async function getLatestNews() {
   const { data } = await supabase
@@ -17,7 +28,6 @@ async function getLatestNews() {
   if (!data) return null
 
   const newsData = data as any
-
   const { data: likesCount } = await supabase
     .rpc('get_daily_news_likes', { news_id: newsData.id } as any)
 
@@ -40,7 +50,7 @@ export default async function HomePage() {
     )
   }
 
-  const content = (news.content as any[]) || []
+  const content = news.content || []
 
   return (
     <main className="min-h-screen pb-20">
@@ -76,19 +86,55 @@ export default async function HomePage() {
           <p className="text-gray-300 text-lg leading-relaxed">{news.summary}</p>
           
           <div className="mt-6 flex items-center gap-4">
-            <LikeButton 
-              dailyNewsId={news.id} 
-              initialLikes={news.likes_count}
-            />
+            <LikeButton dailyNewsId={news.id} initialLikes={news.likes_count} />
           </div>
         </div>
 
-        {/* News Grid */}
+        {/* News Grid - 直接内联渲染 */}
         {content.length > 0 ? (
           <div className="grid gap-6">
-            {content.map((item, index) => (
-              <NewsCard key={item.id || index} item={item} index={index} />
-            ))}
+            {content.map((item: any, index: number) => {
+              const tagClass = tagStyles[item.tag_class] || tagStyles.default
+              const imageUrl = item.image || item.image_url
+              
+              return (
+                <article 
+                  key={item.id || index} 
+                  className="group relative bg-card-bg border border-neon-blue/20 rounded-2xl overflow-hidden transition-all duration-400 hover:-translate-y-2 hover:border-neon-blue hover:shadow-[0_20px_60px_rgba(0,245,255,0.2)]"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-neon-blue/10 via-transparent to-neon-pink/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                  
+                  <SafeImage
+                    src={imageUrl}
+                    alt={item.title}
+                    className="w-full h-52 object-cover border-b border-neon-blue/10"
+                  />
+                  
+                  <div className="p-6">
+                    <span className={`inline-block px-3 py-1 text-xs font-semibold uppercase tracking-wider rounded-full border mb-4 ${tagClass}`}>
+                      {item.tag}
+                    </span>
+                    
+                    <h3 className="text-xl font-bold text-white mb-3 leading-snug">{item.title}</h3>
+                    
+                    <p className="text-gray-400 leading-relaxed mb-4">{item.summary}</p>
+                    
+                    <div className="flex items-center justify-between pt-4 border-t border-white/10 text-sm">
+                      <span className="text-neon-pink">{item.source}</span>
+                      <span className="text-gray-500">{item.date}</span>
+                      <Link
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-neon-blue hover:text-neon-pink transition-all hover:gap-2"
+                      >
+                        阅读全文 →
+                      </Link>
+                    </div>
+                  </div>
+                </article>
+              )
+            })}
           </div>
         ) : (
           <div className="text-center py-12 text-gray-500">
