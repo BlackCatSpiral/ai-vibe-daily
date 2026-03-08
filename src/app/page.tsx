@@ -4,6 +4,7 @@ import { LikeButton } from '@/components/LikeButton'
 import { SafeImage } from '@/components/SafeImage'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
+import { unstable_noStore } from 'next/cache'
 
 const tagStyles: Record<string, string> = {
   crisis: 'bg-red-500/10 text-red-400 border-red-500/30',
@@ -14,10 +15,14 @@ const tagStyles: Record<string, string> = {
   default: 'bg-gray-500/10 text-gray-400 border-gray-500/30',
 }
 
-// 动态渲染，无缓存
+// 完全禁用缓存
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 async function getLatestNews() {
+  // 确保不缓存
+  unstable_noStore()
+  
   const { data } = await supabase
     .from('daily_news')
     .select('*')
