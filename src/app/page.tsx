@@ -14,8 +14,8 @@ const tagStyles: Record<string, string> = {
   default: 'bg-gray-500/10 text-gray-400 border-gray-500/30',
 }
 
-// ISR: 每小时重新生成一次
-export const revalidate = 3600
+// 动态渲染，无缓存
+export const dynamic = 'force-dynamic'
 
 async function getLatestNews() {
   const { data } = await supabase
