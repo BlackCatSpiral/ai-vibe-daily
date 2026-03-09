@@ -21,10 +21,18 @@ function createSafeClient() {
 const client = createSafeClient()
 
 // 导出一个安全的 supabase 对象，如果初始化失败则使用 mock
-export const supabase = client || {
+const mockSupabase = {
   auth: {
     getUser: async () => ({ data: { user: null }, error: null }),
-    onAuthStateChange: () => ({ subscription: { unsubscribe: () => {} } }),
+    onAuthStateChange: (callback: any) => { 
+      return { 
+        data: { 
+          subscription: { 
+            unsubscribe: () => {} 
+          } 
+        } 
+      }
+    },
     signUp: async () => ({ data: null, error: new Error('Auth not available') }),
     signInWithPassword: async () => ({ data: null, error: new Error('Auth not available') }),
     signOut: async () => ({ error: null }),
@@ -38,7 +46,9 @@ export const supabase = client || {
     delete: () => ({ eq: () => ({ eq: async () => ({ error: null }) }) }),
   }),
   rpc: async () => ({ data: 0, error: null }),
-} as any
+}
+
+export const supabase = client || mockSupabase as any
 
 export async function getCurrentUser() {
   if (!client) return null
