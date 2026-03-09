@@ -56,11 +56,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     getUser()
 
     try {
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+      const result = supabase.auth.onAuthStateChange(() => {
         getUser()
       })
-
-      return () => subscription.unsubscribe()
+      
+      // 安全地获取 subscription
+      const subscription = result?.data?.subscription
+      
+      if (subscription) {
+        return () => subscription.unsubscribe()
+      }
     } catch (e) {
       console.error('Auth state change error:', e)
     }
