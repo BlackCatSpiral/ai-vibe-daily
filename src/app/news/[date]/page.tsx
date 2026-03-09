@@ -11,23 +11,16 @@ const tagStyles: Record<string, string> = {
   crisis: 'bg-red-500/10 text-red-400 border-red-500/30',
   security: 'bg-red-500/10 text-red-400 border-red-500/30',
   update: 'bg-neon-blue/10 text-neon-blue border-neon-blue/30',
-  trend: 'bg-green-500/10 text-green-400 border-green-500/30',
+  trend: 'bg-green-500/10 text-green-400 border-green-blue/30',
   strategy: 'bg-neon-pink/10 text-neon-pink border-neon-pink/30',
   default: 'bg-gray-500/10 text-gray-400 border-gray-500/30',
 }
 
-// 完全禁用缓存，确保每次请求都获取最新数据
+// 完全禁用缓存
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-interface PageProps {
-  params: {
-    date: string
-  }
-}
-
 async function getNewsByDate(date: string) {
-  // 确保不缓存
   unstable_noStore()
   
   const { data } = await supabase
@@ -48,8 +41,13 @@ async function getNewsByDate(date: string) {
   }
 }
 
-export default async function NewsPage({ params }: PageProps) {
-  const news = await getNewsByDate(params.date)
+export default async function NewsPage({ 
+  params 
+}: { 
+  params: Promise<{ date: string }> 
+}) {
+  const { date } = await params
+  const news = await getNewsByDate(date)
 
   if (!news) {
     return (
@@ -97,7 +95,6 @@ export default async function NewsPage({ params }: PageProps) {
           </div>
         </div>
 
-        {/* News Grid - 直接内联渲染 */}
         {content.length > 0 ? (
           <div className="grid gap-6">
             {content.map((item: any, index: number) => {
