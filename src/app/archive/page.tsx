@@ -2,8 +2,16 @@ import Link from 'next/link'
 import { formatDate } from '@/utils'
 import { Calendar } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { unstable_noStore } from 'next/cache'
+
+// 完全禁用缓存
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 async function getAllNews() {
+  // 确保不缓存
+  unstable_noStore()
+  
   const { data } = await supabase
     .from('daily_news')
     .select('id, date, title, summary')

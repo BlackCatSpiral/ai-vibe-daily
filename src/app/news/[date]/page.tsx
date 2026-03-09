@@ -5,6 +5,7 @@ import { SafeImage } from '@/components/SafeImage'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
+import { unstable_noStore } from 'next/cache'
 
 const tagStyles: Record<string, string> = {
   crisis: 'bg-red-500/10 text-red-400 border-red-500/30',
@@ -15,8 +16,9 @@ const tagStyles: Record<string, string> = {
   default: 'bg-gray-500/10 text-gray-400 border-gray-500/30',
 }
 
-// ISR: 每小时重新生成一次
-export const revalidate = 3600
+// 完全禁用缓存，确保每次请求都获取最新数据
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 interface PageProps {
   params: {
@@ -25,6 +27,9 @@ interface PageProps {
 }
 
 async function getNewsByDate(date: string) {
+  // 确保不缓存
+  unstable_noStore()
+  
   const { data } = await supabase
     .from('daily_news')
     .select('*')
