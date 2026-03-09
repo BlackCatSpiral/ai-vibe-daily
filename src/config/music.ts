@@ -17,15 +17,15 @@ export const MUSIC_PLAYLIST: MusicTrack[] = [
     url: '/music/Reminiscence.ogg',
     artist: 'Pixabay'
   },
+  {
+    name: 'Second Run',
+    url: '/music/Second_Run.ogg',
+    artist: 'Unknown'
+  },
   // 添加更多音乐，例如：
   // {
   //   name: '我的歌曲1',
   //   url: '/music/song1.mp3',
-  //   artist: '艺术家名'
-  // },
-  // {
-  //   name: '我的歌曲2', 
-  //   url: '/music/song2.mp3',
   //   artist: '艺术家名'
   // },
 ]
