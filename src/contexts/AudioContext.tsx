@@ -1,12 +1,14 @@
 'use client'
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { getPlaylist, MusicTrack } from '@/config/music'
 
 interface AudioContextType {
   isPlaying: boolean
   isMuted: boolean
   currentTrack: number
   trackName: string
+  playlist: MusicTrack[]
   toggleMute: () => void
   nextTrack: () => void
   prevTrack: () => void
@@ -14,34 +16,8 @@ interface AudioContextType {
 
 const AudioContext = createContext<AudioContextType | undefined>(undefined)
 
-// 多首背景音乐列表
-const MUSIC_PLAYLIST = [
-  {
-    name: 'Reminiscence',
-    url: '/music/Reminiscence.ogg',
-    artist: 'Pixabay'
-  },
-  {
-    name: 'Tech Ambient',
-    url: 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3',
-    artist: 'Pixabay'
-  },
-  {
-    name: 'Cyberpunk',
-    url: 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3',
-    artist: 'Pixabay'
-  },
-  {
-    name: 'Electronic Chill',
-    url: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3',
-    artist: 'Pixabay'
-  },
-  {
-    name: 'Lo-Fi Study',
-    url: 'https://cdn.pixabay.com/download/audio/2022/02/07/audio_48f801c4a1.mp3',
-    artist: 'Pixabay'
-  }
-]
+// 获取播放列表
+const PLAYLIST = getPlaylist()
 
 export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [isPlaying, setIsPlaying] = useState(false)
@@ -53,7 +29,12 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (typeof window === 'undefined') return
     
-    const newAudio = new Audio(MUSIC_PLAYLIST[0].url)
+    if (PLAYLIST.length === 0 || !PLAYLIST[0].url) {
+      console.log('No music files found in playlist')
+      return
+    }
+    
+    const newAudio = new Audio(PLAYLIST[0].url)
     newAudio.loop = true
     newAudio.volume = 0.3
     setAudio(newAudio)
@@ -69,9 +50,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     
     if (savedTrack) {
       const trackIndex = parseInt(savedTrack, 10)
-      if (trackIndex >= 0 && trackIndex < MUSIC_PLAYLIST.length) {
+      if (trackIndex >= 0 && trackIndex < PLAYLIST.length && PLAYLIST[trackIndex].url) {
         setCurrentTrack(trackIndex)
-        newAudio.src = MUSIC_PLAYLIST[trackIndex].url
+        newAudio.src = PLAYLIST[trackIndex].url
       }
     }
 
@@ -83,10 +64,13 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
   // 切换歌曲时更新音频源
   useEffect(() => {
-    if (!audio) return
+    if (!audio || PLAYLIST.length === 0) return
+    
+    const currentTrackData = PLAYLIST[currentTrack]
+    if (!currentTrackData || !currentTrackData.url) return
     
     const wasPlaying = !audio.paused
-    audio.src = MUSIC_PLAYLIST[currentTrack].url
+    audio.src = currentTrackData.url
     audio.load()
     
     if (wasPlaying || isPlaying) {
@@ -103,7 +87,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
   // 处理用户首次交互后播放
   useEffect(() => {
-    if (!audio || isPlaying) return
+    if (!audio || isPlaying || PLAYLIST.length === 0) return
 
     const handleInteraction = async () => {
       try {
@@ -139,11 +123,13 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   }, [audio, isMuted, isPlaying])
 
   const nextTrack = useCallback(() => {
-    setCurrentTrack((prev) => (prev + 1) % MUSIC_PLAYLIST.length)
+    if (PLAYLIST.length <= 1) return
+    setCurrentTrack((prev) => (prev + 1) % PLAYLIST.length)
   }, [])
 
   const prevTrack = useCallback(() => {
-    setCurrentTrack((prev) => (prev - 1 + MUSIC_PLAYLIST.length) % MUSIC_PLAYLIST.length)
+    if (PLAYLIST.length <= 1) return
+    setCurrentTrack((prev) => (prev - 1 + PLAYLIST.length) % PLAYLIST.length)
   }, [])
 
   return (
@@ -151,7 +137,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       isPlaying, 
       isMuted, 
       currentTrack,
-      trackName: MUSIC_PLAYLIST[currentTrack].name,
+      trackName: PLAYLIST[currentTrack]?.name || '暂无音乐',
+      playlist: PLAYLIST,
       toggleMute, 
       nextTrack,
       prevTrack

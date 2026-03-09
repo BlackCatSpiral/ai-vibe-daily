@@ -5,8 +5,10 @@ import { Volume2, VolumeX, SkipForward, SkipBack, Music } from 'lucide-react'
 import { useState } from 'react'
 
 export function BackgroundMusic() {
-  const { isMuted, toggleMute, nextTrack, prevTrack, trackName, currentTrack } = useAudio()
+  const { isMuted, toggleMute, nextTrack, prevTrack, trackName, currentTrack, playlist } = useAudio()
   const [showControls, setShowControls] = useState(false)
+  
+  const hasMultipleTracks = playlist.length > 1
 
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
@@ -22,30 +24,32 @@ export function BackgroundMusic() {
             <p className="text-xs text-gray-500">{currentTrack + 1} / 5</p>
           </div>
           
-          {/* 切歌按钮 */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={prevTrack}
-              className="flex items-center justify-center w-10 h-10 
+          {/* 切歌按钮 - 只有多首歌曲时显示 */}
+          {hasMultipleTracks && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={prevTrack}
+                className="flex items-center justify-center w-10 h-10 
                        bg-card-bg border border-neon-blue/30 rounded-full
                        hover:border-neon-blue hover:shadow-[0_0_15px_rgba(0,245,255,0.3)]
                        transition-all duration-300 group"
-              title="上一首"
-            >
-              <SkipBack className="w-4 h-4 text-gray-400 group-hover:text-neon-blue transition-colors" />
-            </button>
-            
-            <button
-              onClick={nextTrack}
-              className="flex items-center justify-center w-10 h-10 
+                title="上一首"
+              >
+                <SkipBack className="w-4 h-4 text-gray-400 group-hover:text-neon-blue transition-colors" />
+              </button>
+              
+              <button
+                onClick={nextTrack}
+                className="flex items-center justify-center w-10 h-10 
                        bg-card-bg border border-neon-blue/30 rounded-full
                        hover:border-neon-blue hover:shadow-[0_0_15px_rgba(0,245,255,0.3)]
                        transition-all duration-300 group"
-              title="下一首"
-            >
-              <SkipForward className="w-4 h-4 text-gray-400 group-hover:text-neon-blue transition-colors" />
-            </button>
-          </div>
+                title="下一首"
+              >
+                <SkipForward className="w-4 h-4 text-gray-400 group-hover:text-neon-blue transition-colors" />
+              </button>
+            </div>
+          )}
         </div>
       )}
       
