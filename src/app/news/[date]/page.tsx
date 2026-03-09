@@ -11,7 +11,7 @@ const tagStyles: Record<string, string> = {
   crisis: 'bg-red-500/10 text-red-400 border-red-500/30',
   security: 'bg-red-500/10 text-red-400 border-red-500/30',
   update: 'bg-neon-blue/10 text-neon-blue border-neon-blue/30',
-  trend: 'bg-green-500/10 text-green-400 border-green-blue/30',
+  trend: 'bg-green-500/10 text-green-400 border-green-500/30',
   strategy: 'bg-neon-pink/10 text-neon-pink border-neon-pink/30',
   default: 'bg-gray-500/10 text-gray-400 border-gray-500/30',
 }
@@ -41,13 +41,13 @@ async function getNewsByDate(date: string) {
   }
 }
 
+// Next.js 14 兼容的写法 - params 不是 Promise
 export default async function NewsPage({ 
   params 
 }: { 
-  params: Promise<{ date: string }> 
+  params: { date: string }
 }) {
-  const { date } = await params
-  const news = await getNewsByDate(date)
+  const news = await getNewsByDate(params.date)
 
   if (!news) {
     return (
