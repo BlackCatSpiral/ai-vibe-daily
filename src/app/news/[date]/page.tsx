@@ -2,7 +2,7 @@ import { formatDate } from '@/utils'
 import { LikeButton } from '@/components/LikeButton'
 import { CommentsSection } from '@/components/CommentsSection'
 import { SafeImage } from '@/components/SafeImage'
-import { supabase } from '@/lib/supabase'
+import { supabaseServer } from '@/lib/supabase-server'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { unstable_noStore } from 'next/cache'
@@ -23,7 +23,7 @@ export const revalidate = 0
 async function getNewsByDate(date: string) {
   unstable_noStore()
   
-  const { data } = await supabase
+  const { data } = await supabaseServer
     .from('daily_news')
     .select('*')
     .eq('date', date)
@@ -32,7 +32,7 @@ async function getNewsByDate(date: string) {
   if (!data) return null
 
   const newsData = data as any
-  const { data: likesCount } = await supabase
+  const { data: likesCount } = await supabaseServer
     .rpc('get_daily_news_likes', { news_id: newsData.id } as any)
 
   return {

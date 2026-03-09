@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { formatDate } from '@/utils'
 import { Calendar } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
+import { supabaseServer } from '@/lib/supabase-server'
 import { unstable_noStore } from 'next/cache'
 
 // 完全禁用缓存
@@ -12,11 +12,19 @@ async function getAllNews() {
   // 确保不缓存
   unstable_noStore()
   
-  const { data } = await supabase
+  console.log('[Archive] Fetching news from Supabase...')
+  
+  const { data, error } = await supabaseServer
     .from('daily_news')
     .select('id, date, title, summary')
     .order('date', { ascending: false })
-
+  
+  if (error) {
+    console.error('[Archive] Supabase error:', error)
+    return []
+  }
+  
+  console.log('[Archive] Fetched', data?.length || 0, 'items')
   return data || []
 }
 
