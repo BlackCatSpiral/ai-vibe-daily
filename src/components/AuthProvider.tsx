@@ -21,27 +21,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   async function getUser() {
-    const { data: { user: authUser } } = await supabase.auth.getUser()
-    
-    if (authUser) {
-      const { data } = await supabase
-        .from('profiles')
-        .select('id, username, avatar_url, created_at')
-        .eq('id', authUser.id)
-        .single()
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
       
-      const profile = data as any
-      
-      if (profile) {
-        setUser({
-          id: profile.id,
-          email: authUser.email!,
-          username: profile.username || '',
-          avatar_url: profile.avatar_url || undefined,
-          created_at: profile.created_at
-        })
+      if (authUser) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('id, username, avatar_url, created_at')
+          .eq('id', authUser.id)
+          .single()
+        
+        const profile = data as any
+        
+        if (profile) {
+          setUser({
+            id: profile.id,
+            email: authUser.email!,
+            username: profile.username || '',
+            avatar_url: profile.avatar_url || undefined,
+            created_at: profile.created_at
+          })
+        }
+      } else {
+        setUser(null)
       }
-    } else {
+    } catch (e) {
+      console.error('Auth error:', e)
       setUser(null)
     }
     setLoading(false)
@@ -50,11 +55,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     getUser()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      getUser()
-    })
+    try {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+        getUser()
+      })
 
-    return () => subscription.unsubscribe()
+      return () => subscription.unsubscribe()
+    } catch (e) {
+      console.error('Auth state change error:', e)
+    }
   }, [])
 
   return (
