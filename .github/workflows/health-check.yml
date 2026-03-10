@@ -1,0 +1,73 @@
+name: Health Check - 网站状态监控
+
+on:
+  schedule:
+    # 每6小时检查一次 (00:00, 06:00, 12:00, 18:00 UTC)
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Check website health
+      id: health_check
+      run: |
+        URL="https://ai-vibe-daily.vercel.app"
+        STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL" --max-time 30)
+        
+        echo "status=$STATUS" >> $GITHUB_OUTPUT
+        echo "time=$(date -u +"%Y-%m-%d %H:%M UTC")" >> $GITHUB_OUTPUT
+        
+        if [ "$STATUS" = "200" ]; then
+          echo "✅ Website is healthy (HTTP $STATUS)"
+          exit 0
+        else
+          echo "❌ Website is unhealthy (HTTP $STATUS)"
+          exit 1
+        fi
+        
+    - name: Check daily news exists
+      id: check_news
+      run: |
+        TODAY=$(date +%Y-%m-%d)
+        URL="https://ai-vibe-daily.vercel.app/api/news?date=$TODAY"
+        
+        RESPONSE=$(curl -s "$URL" --max-time 30)
+        
+        if echo "$RESPONSE" | grep -q "$TODAY"; then
+          echo "✅ Today's news exists"
+          echo "news_exists=true" >> $GITHUB_OUTPUT
+        else
+          echo "⚠️ Today's news not found"
+          echo "news_exists=false" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Send success notification (daily)
+      if: github.event.schedule == '0 6 * * *' && success()
+      env:
+        FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+      run: |
+        curl -X POST "$FEISHU_WEBHOOK" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "msg_type": "text",
+            "content": {
+              "text": "✅ 早报网站运行正常\n时间: '$(date +"%Y-%m-%d %H:%M")'\n网站: https://ai-vibe-daily.vercel.app"
+            }
+          }'
+        
+    - name: Send failure notification
+      if: failure()
+      env:
+        FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+      run: |
+        curl -X POST "$FEISHU_WEBHOOK" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "msg_type": "text",
+            "content": {
+              "text": "🚨 网站健康检查失败\nHTTP状态: ${{ steps.health_check.outputs.status }}\n时间: ${{ steps.health_check.outputs.time }}\n请检查网站状态"
+            }
+          }'
