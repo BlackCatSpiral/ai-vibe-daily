@@ -47,7 +47,7 @@ export function Navbar() {
                     onClick={() => setShowUserMenu(!showUserMenu)}
                     className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors"
                   >
-                    <UserAvatar user={user as any} size="sm" />
+                    <UserAvatar user={user as any} size="md" />
                     <span className="hidden sm:block">{user.username}</span>
                   </button>
 
