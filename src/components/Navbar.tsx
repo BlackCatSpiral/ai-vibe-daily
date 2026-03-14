@@ -4,16 +4,19 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from './AuthProvider'
 import { signOut, signIn, signUp } from '@/lib/supabase'
-import { User, LogOut, Menu, X } from 'lucide-react'
+import { User, LogOut, Menu, X, Settings, UserCircle } from 'lucide-react'
+import { UserAvatar } from './UserAvatar'
 
 export function Navbar() {
   const { user, refreshUser } = useAuth()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showLoginModal, setShowLoginModal] = useState(false)
+  const [showUserMenu, setShowUserMenu] = useState(false)
 
   async function handleLogout() {
     await signOut()
     await refreshUser()
+    setShowUserMenu(false)
   }
 
   return (
@@ -39,18 +42,53 @@ export function Navbar() {
 
             <div className="flex items-center gap-4">
               {user ? (
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2 text-gray-300">
-                    <User className="w-5 h-5" />
-                    <span className="hidden sm:block">{user.username}</span>
-                  </div>
+                <div className="relative">
                   <button
-                    onClick={handleLogout}
-                    className="p-2 text-gray-400 hover:text-red-400 transition-colors"
-                    title="退出登录"
+                    onClick={() => setShowUserMenu(!showUserMenu)}
+                    className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors"
                   >
-                    <LogOut className="w-5 h-5" />
+                    <UserAvatar user={user as any} size="sm" />
+                    <span className="hidden sm:block">{user.username}</span>
                   </button>
+
+                  {/* 用户下拉菜单 */}
+                  {showUserMenu && (
+                    <>
+                      <div 
+                        className="fixed inset-0 z-40" 
+                        onClick={() => setShowUserMenu(false)}
+                      />
+                      <div className="absolute right-0 top-full mt-2 w-48 bg-card-bg border border-white/10 rounded-xl shadow-xl z-50 overflow-hidden">
+                        <Link
+                          href={`/profile/${user.username}`}
+                          onClick={() => setShowUserMenu(false)}
+                          className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-white/5 hover:text-white transition-colors"
+                        >
+                          <UserCircle className="w-5 h-5" />
+                          我的主页
+                        </Link>
+                        
+                        <Link
+                          href="/settings"
+                          onClick={() => setShowUserMenu(false)}
+                          className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-white/5 hover:text-white transition-colors"
+                        >
+                          <Settings className="w-5 h-5" />
+                          设置
+                        </Link>
+                        
+                        <hr className="border-white/10" />
+                        
+                        <button
+                          onClick={handleLogout}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-white/5 hover:text-red-400 transition-colors"
+                        >
+                          <LogOut className="w-5 h-5" />
+                          退出登录
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               ) : (
                 <button
@@ -87,6 +125,24 @@ export function Navbar() {
                 >
                   归档
                 </Link>
+                {user && (
+                  <>
+                    <Link 
+                      href={`/profile/${user.username}`}
+                      className="text-gray-300 hover:text-neon-blue py-2"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      我的主页
+                    </Link>
+                    <Link 
+                      href="/settings"
+                      className="text-gray-300 hover:text-neon-blue py-2"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      设置
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           )}

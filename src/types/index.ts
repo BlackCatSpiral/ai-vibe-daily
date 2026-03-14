@@ -3,6 +3,14 @@ export interface User {
   email: string
   username: string
   avatar_url?: string
+  bio?: string
+  created_at: string
+}
+
+export interface CommentLike {
+  id: string
+  comment_id: string
+  user_id: string
   created_at: string
 }
 
@@ -42,6 +50,8 @@ export interface Comment {
   updated_at: string
   user?: User
   replies?: Comment[]
+  likes_count?: number
+  user_liked?: boolean
 }
 
 export interface Like {

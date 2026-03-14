@@ -3,8 +3,18 @@ create table if not exists public.profiles (
   id uuid references auth.users on delete cascade primary key,
   username text unique,
   avatar_url text,
+  bio text, -- 个性签名
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- 评论点赞表
+create table if not exists public.comment_likes (
+  id uuid default gen_random_uuid() primary key,
+  comment_id uuid references public.comments(id) on delete cascade not null,
+  user_id uuid references public.profiles(id) on delete cascade not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  unique(comment_id, user_id)
 );
 
 -- 每日早报表
@@ -46,11 +56,16 @@ create index if not exists likes_daily_news_id_idx on public.likes(daily_news_id
 create index if not exists likes_user_id_idx on public.likes(user_id);
 create index if not exists daily_news_date_idx on public.daily_news(date);
 
+-- 评论点赞索引
+create index if not exists comment_likes_comment_id_idx on public.comment_likes(comment_id);
+create index if not exists comment_likes_user_id_idx on public.comment_likes(user_id);
+
 -- 启用 RLS
 alter table public.profiles enable row level security;
 alter table public.daily_news enable row level security;
 alter table public.comments enable row level security;
 alter table public.likes enable row level security;
+alter table public.comment_likes enable row level security;
 
 -- Profiles RLS
 create policy "Public profiles are viewable by everyone"
@@ -88,6 +103,28 @@ create policy "Authenticated users can create likes"
 
 create policy "Users can delete own likes"
   on public.likes for delete using (auth.uid() = user_id);
+
+-- Comment Likes RLS
+create policy "Comment likes are viewable by everyone"
+  on public.comment_likes for select using (true);
+
+create policy "Authenticated users can create comment likes"
+  on public.comment_likes for insert with check (auth.uid() = user_id);
+
+create policy "Users can delete own comment likes"
+  on public.comment_likes for delete using (auth.uid() = user_id);
+
+-- 函数：获取评论的点赞数
+create or replace function public.get_comment_likes(comment_id uuid)
+returns bigint as $$
+  select count(*) from public.comment_likes where comment_id = comment_id;
+$$ language sql security definer;
+
+-- 函数：检查用户是否点赞评论
+create or replace function public.has_user_liked_comment(comment_id uuid, uid uuid)
+returns boolean as $$
+  select exists(select 1 from public.comment_likes where comment_id = comment_id and user_id = uid);
+$$ language sql security definer;
 
 -- 函数：获取每日新闻的点赞数
 create or replace function public.get_daily_news_likes(news_id uuid)
@@ -132,8 +169,8 @@ create trigger handle_comments_updated_at
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
-  insert into public.profiles (id, username, avatar_url)
-  values (new.id, new.raw_user_meta_data->>'username', null);
+  insert into public.profiles (id, username, avatar_url, bio)
+  values (new.id, new.raw_user_meta_data->>'username', null, null);
   return new;
 end;
 $$ language plpgsql security definer;
