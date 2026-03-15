@@ -18,57 +18,73 @@ interface ProfilePageProps {
 async function getProfile(username: string) {
   unstable_noStore()
   
-  const { data: profile } = await supabaseServer
-    .from('profiles')
-    .select('*')
-    .eq('username', username)
-    .single()
+  console.log('[Profile] Fetching profile for username:', username)
+  
+  try {
+    const { data: profile, error } = await supabaseServer
+      .from('profiles')
+      .select('*')
+      .eq('username', username)
+      .single()
 
-  if (!profile) return null
+    if (error) {
+      console.error('[Profile] Supabase error:', error)
+      return null
+    }
 
-  const profileData = profile as any
+    if (!profile) {
+      console.log('[Profile] No profile found for username:', username)
+      return null
+    }
 
-  // 获取用户评论数
-  const { count: commentsCount } = await supabaseServer
-    .from('comments')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', profileData.id)
+    console.log('[Profile] Found profile:', profile.id)
+    const profileData = profile as any
 
-  // 获取用户收到的点赞数
-  const { data: userComments } = await supabaseServer
-    .from('comments')
-    .select('id')
-    .eq('user_id', profileData.id)
-
-  let likesReceived = 0
-  if (userComments && userComments.length > 0) {
-    const commentIds = (userComments as any[]).map(c => c.id)
-    const { count } = await supabaseServer
-      .from('comment_likes')
+    // 获取用户评论数
+    const { count: commentsCount } = await supabaseServer
+      .from('comments')
       .select('*', { count: 'exact', head: true })
-      .in('comment_id', commentIds)
-    likesReceived = count || 0
-  }
+      .eq('user_id', profileData.id)
 
-  // 获取最近评论
-  const { data: recentComments } = await supabaseServer
-    .from('comments')
-    .select(`
-      *,
-      daily_news:daily_news_id(date, title)
-    `)
-    .eq('user_id', profileData.id)
-    .is('parent_id', null)
-    .order('created_at', { ascending: false })
-    .limit(10)
+    // 获取用户收到的点赞数
+    const { data: userComments } = await supabaseServer
+      .from('comments')
+      .select('id')
+      .eq('user_id', profileData.id)
 
-  return {
-    profile: profileData,
-    stats: {
-      commentsCount: commentsCount || 0,
-      likesReceived
-    },
-    recentComments: recentComments || []
+    let likesReceived = 0
+    if (userComments && userComments.length > 0) {
+      const commentIds = (userComments as any[]).map(c => c.id)
+      const { count } = await supabaseServer
+        .from('comment_likes')
+        .select('*', { count: 'exact', head: true })
+        .in('comment_id', commentIds)
+      likesReceived = count || 0
+    }
+
+    // 获取最近评论
+    const { data: recentComments } = await supabaseServer
+      .from('comments')
+      .select(`
+        *,
+        daily_news:daily_news_id(date, title)
+      `)
+      .eq('user_id', profileData.id)
+      .is('parent_id', null)
+      .order('created_at', { ascending: false })
+      .limit(10)
+
+    return {
+      profile: profileData,
+      stats: {
+        commentsCount: commentsCount || 0,
+        likesReceived
+      },
+      recentComments: recentComments || []
+    }
+  } catch (err) {
+    console.error('[Profile] Unexpected error:', err)
+    return null
   }
 }
 
@@ -76,6 +92,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   const data = await getProfile(params.username)
 
   if (!data) {
+    console.log('[Profile] Rendering 404 for username:', params.username)
     notFound()
   }
 
