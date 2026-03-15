@@ -25,7 +25,6 @@ export const dynamicParams = true
 export async function generateStaticParams() {
   return []
 }
-export const revalidate = 0
 
 async function getNewsByDate(date: string) {
   unstable_noStore()

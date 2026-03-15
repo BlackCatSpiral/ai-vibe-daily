@@ -10,7 +10,6 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 export const dynamicParams = true
 
-// 生成静态参数（ISR 回退）
 export async function generateStaticParams() {
   return []
 }
@@ -21,7 +20,6 @@ interface ProfilePageProps {
   }
 }
 
-// 简单的测试组件
 function TestPage({ username, error }: { username: string, error?: string }) {
   return (
     <main className="min-h-screen pb-20">
@@ -55,13 +53,9 @@ function TestPage({ username, error }: { username: string, error?: string }) {
 async function getProfile(username: string) {
   unstable_noStore()
   
-  console.log('[Profile] Fetching profile for username:', username)
-  
   try {
-    // 先检查环境变量
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      console.error('[Profile] SUPABASE_SERVICE_ROLE_KEY is not set')
-      return { error: 'Server configuration error: Missing Service Role Key' }
+      return { error: 'Missing SUPABASE_SERVICE_ROLE_KEY' }
     }
 
     const { data: profile, error } = await supabaseServer
@@ -71,25 +65,20 @@ async function getProfile(username: string) {
       .single()
 
     if (error) {
-      console.error('[Profile] Supabase error:', error.message, error.code)
-      return { error: `Database error: ${error.message} (${error.code})` }
+      return { error: `${error.message} (${error.code})` }
     }
 
     if (!profile) {
-      console.log('[Profile] No profile found for username:', username)
       return null
     }
 
-    console.log('[Profile] Found profile:', profile.id, profile.username)
     const profileData = profile as any
 
-    // 获取用户评论数
     const { count: commentsCount } = await supabaseServer
       .from('comments')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', profileData.id)
 
-    // 获取用户收到的点赞数
     const { data: userComments } = await supabaseServer
       .from('comments')
       .select('id')
@@ -105,7 +94,6 @@ async function getProfile(username: string) {
       likesReceived = count || 0
     }
 
-    // 获取最近评论
     const { data: recentComments } = await supabaseServer
       .from('comments')
       .select(`
@@ -126,58 +114,42 @@ async function getProfile(username: string) {
       recentComments: recentComments || []
     }
   } catch (err) {
-    console.error('[Profile] Unexpected error:', err)
     return { error: String(err) }
   }
 }
 
 export default async function ProfilePage({ params }: ProfilePageProps) {
-  // 确保 params 存在
   if (!params) {
     return <TestPage username="(params is undefined)" error="Params object is undefined" />
   }
 
   const username = params.username
   
-  // 确保 username 存在
   if (!username) {
     return <TestPage username="(username is undefined)" error="Username parameter is missing" />
   }
 
-  console.log('[ProfilePage] Rendering for username:', username)
-  
   try {
     const result = await getProfile(username)
 
-    // 如果出错，显示错误页面
     if (result && 'error' in result) {
       return <TestPage username={username} error={result.error} />
     }
 
-    // 用户不存在
     if (!result) {
       return (
         <main className="min-h-screen pb-20">
           <div className="max-w-4xl mx-auto px-4 py-12">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 text-gray-400 hover:text-neon-blue transition-colors mb-8"
-            >
+            <Link href="/" className="inline-flex items-center gap-2 text-gray-400 hover:text-neon-blue transition-colors mb-8">
               <ArrowLeft className="w-5 h-5" />
               返回首页
             </Link>
 
             <div className="bg-card-bg border border-white/10 rounded-2xl p-12 text-center">
               <User className="w-16 h-16 text-gray-500 mx-auto mb-4" />
-              <h1 className="text-2xl font-bold text-white mb-2">
-                用户未找到
-              </h1>
-              <p className="text-gray-400 mb-2">
-                用户名: <span className="text-neon-blue">{username}</span>
-              </p>
-              <p className="text-gray-500 text-sm">
-                该用户可能还没有注册，或者登录过一次系统。
-              </p>
+              <h1 className="text-2xl font-bold text-white mb-2">用户未找到</h1>
+              <p className="text-gray-400 mb-2">用户名: <span className="text-neon-blue">{username}</span></p>
+              <p className="text-gray-500 text-sm">该用户可能还没有注册，或者登录过一次系统。</p>
             </div>
           </div>
         </main>
@@ -189,30 +161,19 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     return (
       <main className="min-h-screen pb-20">
         <div className="max-w-4xl mx-auto px-4 py-12">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-gray-400 hover:text-neon-blue transition-colors mb-8"
-          >
+          <Link href="/" className="inline-flex items-center gap-2 text-gray-400 hover:text-neon-blue transition-colors mb-8">
             <ArrowLeft className="w-5 h-5" />
             返回首页
           </Link>
 
-          <!-- 用户信息卡片 -->
-          <div className="relative bg-card-bg border border-neon-blue/30 rounded-2xl p-8 mb-8 overflow-hidden"
-          >
+          <div className="relative bg-card-bg border border-neon-blue/30 rounded-2xl p-8 mb-8 overflow-hidden">
             <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-neon-blue to-transparent" />
             
             <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
-              <UserAvatar 
-                user={profile as any} 
-                size="xl" 
-                className="border-4 border-neon-blue/20"
-              />
+              <UserAvatar user={profile as any} size="xl" className="border-4 border-neon-blue/20" />
               
               <div className="flex-1 text-center md:text-left">
-                <h1 className="text-3xl font-bold text-white mb-2">
-                  {profile.username}
-                </h1>
+                <h1 className="text-3xl font-bold text-white mb-2">{profile.username}</h1>
                 
                 {profile.bio ? (
                   <p className="text-gray-300 mb-4 max-w-lg">{profile.bio}</p>
@@ -240,43 +201,26 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             </div>
           </div>
 
-          <!-- 最近评论 -->
-          <div className="bg-card-bg border border-white/10 rounded-2xl p-6"
-          >
-            <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2"
-            >
+          <div className="bg-card-bg border border-white/10 rounded-2xl p-6">
+            <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
               <MessageCircle className="w-5 h-5 text-neon-blue" />
               最近评论
             </h2>
 
             {recentComments.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                还没有发表过评论
-              </div>
+              <div className="text-center py-8 text-gray-500">还没有发表过评论</div>
             ) : (
               <div className="space-y-4">
                 {recentComments.map((comment: any) => (
-                  <div 
-                    key={comment.id} 
-                    className="border border-white/5 rounded-xl p-4 hover:border-neon-blue/30 transition-colors"
-                  >
+                  <div key={comment.id} className="border border-white/5 rounded-xl p-4 hover:border-neon-blue/30 transition-colors">
                     <div className="flex items-center justify-between mb-3">
-                      <Link
-                        href={`/news/${comment.daily_news?.date}`}
-                        className="text-neon-blue hover:text-neon-pink transition-colors font-medium"
-                      >
+                      <Link href={`/news/${comment.daily_news?.date}`} className="text-neon-blue hover:text-neon-pink transition-colors font-medium">
                         {comment.daily_news?.title || '未知早报'}
                       </Link>
-                      <span className="text-sm text-gray-500">
-                        {formatDate(comment.created_at)}
-                      </span>
+                      <span className="text-sm text-gray-500">{formatDate(comment.created_at)}</span>
                     </div>
-                    
                     <p className="text-gray-300 leading-relaxed">
-                      {comment.content.length > 200 
-                        ? comment.content.slice(0, 200) + '...' 
-                        : comment.content
-                      }
+                      {comment.content.length > 200 ? comment.content.slice(0, 200) + '...' : comment.content}
                     </p>
                   </div>
                 ))}
