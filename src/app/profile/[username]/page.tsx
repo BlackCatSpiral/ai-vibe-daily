@@ -21,6 +21,12 @@ async function getProfile(username: string) {
   console.log('[Profile] Fetching profile for username:', username)
   
   try {
+    // 先检查环境变量
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('[Profile] SUPABASE_SERVICE_ROLE_KEY is not set')
+      return { error: 'Server configuration error: Missing Service Role Key' }
+    }
+
     const { data: profile, error } = await supabaseServer
       .from('profiles')
       .select('*')
@@ -28,8 +34,8 @@ async function getProfile(username: string) {
       .single()
 
     if (error) {
-      console.error('[Profile] Supabase error:', error.message)
-      return { error: error.message }
+      console.error('[Profile] Supabase error:', error.message, error.code)
+      return { error: `Database error: ${error.message} (${error.code})` }
     }
 
     if (!profile) {
@@ -37,7 +43,7 @@ async function getProfile(username: string) {
       return null
     }
 
-    console.log('[Profile] Found profile:', profile.id)
+    console.log('[Profile] Found profile:', profile.id, profile.username)
     const profileData = profile as any
 
     // 获取用户评论数
@@ -89,12 +95,42 @@ async function getProfile(username: string) {
 }
 
 export default async function ProfilePage({ params }: ProfilePageProps) {
-  // Next.js 15: params 是同步的
   const username = params.username
+  console.log('[ProfilePage] Rendering for username:', username)
+  
   const result = await getProfile(username)
 
-  // 如果出错或找不到，显示友好的提示页面而不是 404
-  if (!result || 'error' in result) {
+  // 如果出错，显示错误页面
+  if (result && 'error' in result) {
+    return (
+      <main className="min-h-screen pb-20">
+        <div className="max-w-4xl mx-auto px-4 py-12">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-gray-400 hover:text-neon-blue transition-colors mb-8"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            返回首页
+          </Link>
+
+          <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-12 text-center">
+            <h1 className="text-2xl font-bold text-red-400 mb-4">
+              服务器错误
+            </h1>
+            <p className="text-gray-300 mb-4">
+              无法加载用户资料
+            </p>
+            <pre className="text-red-400 text-sm bg-black/30 p-4 rounded-lg overflow-auto">
+              {result.error}
+            </pre>
+          </div>
+        </div>
+      </main>
+    )
+  }
+
+  // 用户不存在
+  if (!result) {
     return (
       <main className="min-h-screen pb-20">
         <div className="max-w-4xl mx-auto px-4 py-12">
@@ -114,20 +150,9 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             <p className="text-gray-400 mb-2">
               用户名: <span className="text-neon-blue">{username}</span>
             </p>
-            {'error' in result! && result.error && (
-              <p className="text-red-400 text-sm mb-4">
-                错误: {result.error}
-              </p>
-            )}
-            <p className="text-gray-500 text-sm mb-6">
+            <p className="text-gray-500 text-sm">
               该用户可能还没有注册，或者登录过一次系统。
             </p>
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-neon-blue/20 text-neon-blue rounded-xl hover:bg-neon-blue/30 transition-colors"
-            >
-              返回首页
-            </Link>
           </div>
         </div>
       </main>
@@ -147,7 +172,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           返回首页
         </Link>
 
-        {/* 用户信息卡片 */}
+        <!-- 用户信息卡片 -->
         <div className="relative bg-card-bg border border-neon-blue/30 rounded-2xl p-8 mb-8 overflow-hidden"
         >
           <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-neon-blue to-transparent" />
@@ -190,7 +215,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           </div>
         </div>
 
-        {/* 最近评论 */}
+        <!-- 最近评论 -->
         <div className="bg-card-bg border border-white/10 rounded-2xl p-6"
         >
           <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2"
