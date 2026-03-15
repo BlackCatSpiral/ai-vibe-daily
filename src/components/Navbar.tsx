@@ -25,30 +25,12 @@ export function Navbar() {
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-neon-blue to-neon-purple flex items-center justify-center text-white overflow-hidden">
-                {/* 黑猫图标 */}
-                <svg 
-                  viewBox="0 0 24 24" 
-                  className="w-7 h-7" 
-                  fill="currentColor"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  {/* 猫头轮廓 */}
-                  <path d="M12 2C9.5 2 7.5 3.5 6.5 5.5C5 6 4 7.5 4 9.5C4 13 6.5 16 10 17V19C10 19.5 10.5 20 11 20H13C13.5 20 14 19.5 14 19V17C17.5 16 20 13 20 9.5C20 7.5 19 6 17.5 5.5C16.5 3.5 14.5 2 12 2Z" />
-                  {/* 耳朵 */}
-                  <path d="M7 4L5 2V6L7 4Z" fill="#1a1a2e"/>
-                  <path d="M17 4L19 2V6L17 4Z" fill="#1a1a2e"/>
-                  {/* 眼睛 */}
-                  <ellipse cx="9" cy="9" rx="1.5" ry="2" fill="#1a1a2e"/>
-                  <ellipse cx="15" cy="9" rx="1.5" ry="2" fill="#1a1a2e"/>
-                  {/* 鼻子 */}
-                  <circle cx="12" cy="11.5" r="0.8" fill="#ff6b9d"/>
-                  {/* 胡须 */}
-                  <line x1="5" y1="11" x2="8" y2="11.5" stroke="#1a1a2e" strokeWidth="0.5"/>
-                  <line x1="5" y1="12" x2="8" y2="11.5" stroke="#1a1a2e" strokeWidth="0.5"/>
-                  <line x1="19" y1="11" x2="16" y2="11.5" stroke="#1a1a2e" strokeWidth="0.5"/>
-                  <line x1="19" y1="12" x2="16" y2="11.5" stroke="#1a1a2e" strokeWidth="0.5"/>
-                </svg>
+              <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-neon-blue/50">
+                <img 
+                  src="https://blackcatspiral.github.io/ai-vibe-coding-daily/black-cat-avatar.jpg" 
+                  alt="黑猫" 
+                  className="w-full h-full object-cover"
+                />
               </div>
               <span className="text-white font-bold text-lg hidden sm:block">AI Vibe Daily</span>
             </Link>
