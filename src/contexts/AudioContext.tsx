@@ -10,11 +10,14 @@ interface AudioContextType {
   currentTrack: number
   trackName: string
   playlist: MusicTrack[]
+  currentTime: number
+  duration: number
   togglePlay: () => void
   toggleMute: () => void
   setVolume: (volume: number) => void
   nextTrack: () => void
   prevTrack: () => void
+  seekTo: (time: number) => void
 }
 
 const AudioContext = createContext<AudioContextType | undefined>(undefined)
@@ -25,10 +28,12 @@ const PLAYLIST = getPlaylist()
 export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [isMuted, setIsMuted] = useState(false)
-  const [volume, setVolumeState] = useState(30) // 默认 30%
+  const [volume, setVolumeState] = useState(30)
   const [currentTrack, setCurrentTrack] = useState(0)
+  const [currentTime, setCurrentTime] = useState(0)
+  const [duration, setDuration] = useState(0)
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null)
-  const previousVolumeRef = useRef(30) // 记录静音前的音量
+  const previousVolumeRef = useRef(30)
 
   // 初始化音频
   useEffect(() => {
@@ -64,10 +69,27 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         newAudio.src = PLAYLIST[trackIndex].url
       }
     }
+
+    // 监听播放进度
+    const handleTimeUpdate = () => {
+      setCurrentTime(newAudio.currentTime)
+    }
+
+    // 监听总时长
+    const handleLoadedMetadata = () => {
+      setDuration(newAudio.duration || 0)
+    }
+
+    newAudio.addEventListener('timeupdate', handleTimeUpdate)
+    newAudio.addEventListener('loadedmetadata', handleLoadedMetadata)
+    newAudio.addEventListener('durationchange', handleLoadedMetadata)
     
     setAudio(newAudio)
 
     return () => {
+      newAudio.removeEventListener('timeupdate', handleTimeUpdate)
+      newAudio.removeEventListener('loadedmetadata', handleLoadedMetadata)
+      newAudio.removeEventListener('durationchange', handleLoadedMetadata)
       newAudio.pause()
       newAudio.src = ''
     }
@@ -188,19 +210,29 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     setCurrentTrack((prev) => (prev - 1 + PLAYLIST.length) % PLAYLIST.length)
   }, [])
 
+  const seekTo = useCallback((time: number) => {
+    if (!audio) return
+    const clampedTime = Math.max(0, Math.min(duration, time))
+    audio.currentTime = clampedTime
+    setCurrentTime(clampedTime)
+  }, [audio, duration])
+
   return (
     <AudioContext.Provider value={{ 
       isPlaying, 
       isMuted, 
       volume,
       currentTrack,
+      currentTime,
+      duration,
       trackName: PLAYLIST[currentTrack]?.name || '暂无音乐',
       playlist: PLAYLIST,
       togglePlay,
       toggleMute,
       setVolume,
       nextTrack,
-      prevTrack
+      prevTrack,
+      seekTo
     }}>
       {children}
     </AudioContext.Provider>
