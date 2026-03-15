@@ -45,9 +45,9 @@ async function getNewsByDate(date: string) {
 export default async function NewsPage({ 
   params 
 }: { 
-  params: Promise<{ date: string }>
+  params: { date: string }
 }) {
-  const { date } = await params
+  const date = params.date
   const news = await getNewsByDate(date)
 
   if (!news) {

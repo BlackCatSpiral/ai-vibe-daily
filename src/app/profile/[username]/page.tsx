@@ -3,16 +3,16 @@ import { supabaseServer } from '@/lib/supabase-server'
 import { UserAvatar } from '@/components/UserAvatar'
 import { formatDate } from '@/utils'
 import Link from 'next/link'
-import { ArrowLeft, MessageCircle, Heart, Calendar } from 'lucide-react'
+import { ArrowLeft, MessageCircle, Heart, Calendar, User } from 'lucide-react'
 import { unstable_noStore } from 'next/cache'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 interface ProfilePageProps {
-  params: Promise<{
+  params: {
     username: string
-  }>
+  }
 }
 
 async function getProfile(username: string) {
@@ -28,8 +28,8 @@ async function getProfile(username: string) {
       .single()
 
     if (error) {
-      console.error('[Profile] Supabase error:', error)
-      return null
+      console.error('[Profile] Supabase error:', error.message)
+      return { error: error.message }
     }
 
     if (!profile) {
@@ -84,20 +84,57 @@ async function getProfile(username: string) {
     }
   } catch (err) {
     console.error('[Profile] Unexpected error:', err)
-    return null
+    return { error: String(err) }
   }
 }
 
 export default async function ProfilePage({ params }: ProfilePageProps) {
-  const { username } = await params
-  const data = await getProfile(username)
+  // Next.js 15: params 是同步的
+  const username = params.username
+  const result = await getProfile(username)
 
-  if (!data) {
-    console.log('[Profile] Rendering 404 for username:', username)
-    notFound()
+  // 如果出错或找不到，显示友好的提示页面而不是 404
+  if (!result || 'error' in result) {
+    return (
+      <main className="min-h-screen pb-20">
+        <div className="max-w-4xl mx-auto px-4 py-12">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-gray-400 hover:text-neon-blue transition-colors mb-8"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            返回首页
+          </Link>
+
+          <div className="bg-card-bg border border-white/10 rounded-2xl p-12 text-center">
+            <User className="w-16 h-16 text-gray-500 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-white mb-2">
+              用户未找到
+            </h1>
+            <p className="text-gray-400 mb-2">
+              用户名: <span className="text-neon-blue">{username}</span>
+            </p>
+            {'error' in result! && result.error && (
+              <p className="text-red-400 text-sm mb-4">
+                错误: {result.error}
+              </p>
+            )}
+            <p className="text-gray-500 text-sm mb-6">
+              该用户可能还没有注册，或者登录过一次系统。
+            </p>
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-neon-blue/20 text-neon-blue rounded-xl hover:bg-neon-blue/30 transition-colors"
+            >
+              返回首页
+            </Link>
+          </div>
+        </div>
+      </main>
+    )
   }
 
-  const { profile, stats, recentComments } = data
+  const { profile, stats, recentComments } = result
 
   return (
     <main className="min-h-screen pb-20">
