@@ -20,7 +20,7 @@ interface ProfilePageProps {
   }
 }
 
-function TestPage({ username, error }: { username: string, error?: string }) {
+function TestPage({ username, decodedUsername, error }: { username: string, decodedUsername?: string, error?: string }) {
   return (
     <main className="min-h-screen pb-20">
       <div className="max-w-4xl mx-auto px-4 py-12">
@@ -35,9 +35,9 @@ function TestPage({ username, error }: { username: string, error?: string }) {
         <div className="bg-card-bg border border-white/10 rounded-2xl p-12">
           <h1 className="text-2xl font-bold text-white mb-4">调试信息</h1>
           <div className="space-y-4 text-gray-300">
-            <p><span className="text-neon-blue">用户名参数:</span> {username || '(空)'}</p>
+            <p><span className="text-neon-blue">原始用户名参数:</span> {username || '(空)'}</p>
+            {decodedUsername && <p><span className="text-neon-blue">解码后:</span> {decodedUsername}</p>}
             <p><span className="text-neon-blue">用户名长度:</span> {username?.length || 0}</p>
-            <p><span className="text-neon-blue">URL解码:</span> {decodeURIComponent(username || '')}</p>
             {error && (
               <div className="mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
                 <p className="text-red-400">错误: {error}</p>
@@ -124,8 +124,10 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     return <TestPage username="(params is undefined)" error="Params object is undefined" />
   }
 
-  const username = params.username
-  
+  // 手动解码 URL 编码的用户名
+  const rawUsername = params.username
+  const username = decodeURIComponent(rawUsername)
+
   if (!username) {
     return <TestPage username="(username is undefined)" error="Username parameter is missing" />
   }
@@ -134,7 +136,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     const result = await getProfile(username)
 
     if (result && 'error' in result) {
-      return <TestPage username={username} error={result.error} />
+      return <TestPage username={rawUsername} decodedUsername={username} error={result.error} />
     }
 
     if (!result) {
@@ -232,6 +234,6 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       </main>
     )
   } catch (err) {
-    return <TestPage username={username} error={String(err)} />
+    return <TestPage username={rawUsername} decodedUsername={username} error={String(err)} />
   }
 }
