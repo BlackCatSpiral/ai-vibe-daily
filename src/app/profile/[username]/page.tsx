@@ -58,11 +58,12 @@ async function getProfile(username: string) {
       return { error: 'Missing SUPABASE_SERVICE_ROLE_KEY' }
     }
 
+    // 使用 maybeSingle() 而不是 single()，找不到时返回 null 而不是错误
     const { data: profile, error } = await supabaseServer
       .from('profiles')
       .select('*')
       .eq('username', username)
-      .single()
+      .maybeSingle()
 
     if (error) {
       return { error: `${error.message} (${error.code})` }

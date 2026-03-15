@@ -33,7 +33,7 @@ async function getNewsByDate(date: string) {
     .from('daily_news')
     .select('*')
     .eq('date', date)
-    .single()
+    .maybeSingle()
 
   if (!data) return null
 
