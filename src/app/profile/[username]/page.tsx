@@ -10,9 +10,9 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 interface ProfilePageProps {
-  params: {
+  params: Promise<{
     username: string
-  }
+  }>
 }
 
 async function getProfile(username: string) {
@@ -89,10 +89,11 @@ async function getProfile(username: string) {
 }
 
 export default async function ProfilePage({ params }: ProfilePageProps) {
-  const data = await getProfile(params.username)
+  const { username } = await params
+  const data = await getProfile(username)
 
   if (!data) {
-    console.log('[Profile] Rendering 404 for username:', params.username)
+    console.log('[Profile] Rendering 404 for username:', username)
     notFound()
   }
 
