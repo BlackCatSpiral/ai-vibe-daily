@@ -1,16 +1,18 @@
 'use client'
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import { getPlaylist, MusicTrack } from '@/config/music'
 
 interface AudioContextType {
   isPlaying: boolean
   isMuted: boolean
+  volume: number
   currentTrack: number
   trackName: string
   playlist: MusicTrack[]
   togglePlay: () => void
   toggleMute: () => void
+  setVolume: (volume: number) => void
   nextTrack: () => void
   prevTrack: () => void
 }
@@ -23,8 +25,10 @@ const PLAYLIST = getPlaylist()
 export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [isMuted, setIsMuted] = useState(false)
+  const [volume, setVolumeState] = useState(30) // 默认 30%
   const [currentTrack, setCurrentTrack] = useState(0)
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null)
+  const previousVolumeRef = useRef(30) // 记录静音前的音量
 
   // 初始化音频
   useEffect(() => {
@@ -35,14 +39,18 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       return
     }
     
-    const newAudio = new Audio(PLAYLIST[0].url)
-    newAudio.loop = true
-    newAudio.volume = 0.3
-    setAudio(newAudio)
-
     // 从 localStorage 读取设置
     const savedMute = localStorage.getItem('nyan-mute')
     const savedTrack = localStorage.getItem('nyan-track')
+    const savedVolume = localStorage.getItem('nyan-volume')
+    
+    const initialVolume = savedVolume ? parseInt(savedVolume, 10) : 30
+    setVolumeState(initialVolume)
+    previousVolumeRef.current = initialVolume
+    
+    const newAudio = new Audio(PLAYLIST[0].url)
+    newAudio.loop = true
+    newAudio.volume = initialVolume / 100
     
     if (savedMute === 'true') {
       setIsMuted(true)
@@ -56,6 +64,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         newAudio.src = PLAYLIST[trackIndex].url
       }
     }
+    
+    setAudio(newAudio)
 
     return () => {
       newAudio.pause()
@@ -110,6 +120,27 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     }
   }, [audio, isPlaying])
 
+  const setVolume = useCallback((newVolume: number) => {
+    if (!audio) return
+    
+    const clampedVolume = Math.max(0, Math.min(100, newVolume))
+    setVolumeState(clampedVolume)
+    audio.volume = clampedVolume / 100
+    localStorage.setItem('nyan-volume', String(clampedVolume))
+    
+    // 如果音量 > 0，取消静音
+    if (clampedVolume > 0 && isMuted) {
+      setIsMuted(false)
+      audio.muted = false
+      localStorage.setItem('nyan-mute', 'false')
+    }
+    
+    // 记住非零音量
+    if (clampedVolume > 0) {
+      previousVolumeRef.current = clampedVolume
+    }
+  }, [audio, isMuted])
+
   const toggleMute = useCallback(() => {
     if (!audio) return
 
@@ -117,7 +148,20 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     setIsMuted(newMuted)
     audio.muted = newMuted
     localStorage.setItem('nyan-mute', String(newMuted))
-  }, [audio, isMuted])
+    
+    if (newMuted) {
+      // 静音时记住当前音量
+      previousVolumeRef.current = volume
+    } else {
+      // 取消静音时恢复之前的音量（如果当前是 0）
+      if (volume === 0) {
+        const restoredVolume = previousVolumeRef.current || 30
+        setVolumeState(restoredVolume)
+        audio.volume = restoredVolume / 100
+        localStorage.setItem('nyan-volume', String(restoredVolume))
+      }
+    }
+  }, [audio, isMuted, volume])
 
   const togglePlay = useCallback(() => {
     if (!audio) return
@@ -148,11 +192,13 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     <AudioContext.Provider value={{ 
       isPlaying, 
       isMuted, 
+      volume,
       currentTrack,
       trackName: PLAYLIST[currentTrack]?.name || '暂无音乐',
       playlist: PLAYLIST,
       togglePlay,
-      toggleMute, 
+      toggleMute,
+      setVolume,
       nextTrack,
       prevTrack
     }}>
