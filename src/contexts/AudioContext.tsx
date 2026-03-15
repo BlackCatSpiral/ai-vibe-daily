@@ -9,6 +9,7 @@ interface AudioContextType {
   currentTrack: number
   trackName: string
   playlist: MusicTrack[]
+  togglePlay: () => void
   toggleMute: () => void
   nextTrack: () => void
   prevTrack: () => void
@@ -116,11 +117,22 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     setIsMuted(newMuted)
     audio.muted = newMuted
     localStorage.setItem('nyan-mute', String(newMuted))
+  }, [audio, isMuted])
 
-    if (!isPlaying && !newMuted) {
-      audio.play().then(() => setIsPlaying(true)).catch(console.error)
+  const togglePlay = useCallback(() => {
+    if (!audio) return
+
+    if (isPlaying) {
+      audio.pause()
+      setIsPlaying(false)
+    } else {
+      audio.play().then(() => {
+        setIsPlaying(true)
+      }).catch(err => {
+        console.log('Play failed:', err)
+      })
     }
-  }, [audio, isMuted, isPlaying])
+  }, [audio, isPlaying])
 
   const nextTrack = useCallback(() => {
     if (PLAYLIST.length <= 1) return
@@ -139,6 +151,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       currentTrack,
       trackName: PLAYLIST[currentTrack]?.name || '暂无音乐',
       playlist: PLAYLIST,
+      togglePlay,
       toggleMute, 
       nextTrack,
       prevTrack
