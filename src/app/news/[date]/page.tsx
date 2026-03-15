@@ -19,6 +19,13 @@ const tagStyles: Record<string, string> = {
 // 完全禁用缓存
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+export const dynamicParams = true
+
+// 生成静态参数（ISR 回退）
+export async function generateStaticParams() {
+  return []
+}
+export const revalidate = 0
 
 async function getNewsByDate(date: string) {
   unstable_noStore()

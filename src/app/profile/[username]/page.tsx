@@ -8,6 +8,12 @@ import { unstable_noStore } from 'next/cache'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+export const dynamicParams = true
+
+// 生成静态参数（ISR 回退）
+export async function generateStaticParams() {
+  return []
+}
 
 interface ProfilePageProps {
   params: {
